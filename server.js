@@ -37,7 +37,7 @@ app.use(express.static("public"));
 //mongoose.connect("mongodb://localhost/mongoHeadlines", { useNewUrlParser: true });
 
 var MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/mongoHeadlines";
-mongoose.connect(MONGODB_URI);
+mongoose.connect(MONGODB_URI, { useNewUrlParser: true });
 
 
 // Routes
@@ -45,35 +45,29 @@ mongoose.connect(MONGODB_URI);
 // A GET route for scraping the daily mash website
 app.get("/scrape", function (req, res) {
   // First, we grab the body of the html with axios
-  axios.get("hhttps://www.thedailymash.co.uk/").then(function (response) {
+  axios.get("https://www.thedailymash.co.uk/").then(function (response) {
     // Then, we load that into cheerio and save it to $ for a shorthand selector
     var $ = cheerio.load(response.data);
     var count = 0;
 
     // Now, we grab every h2 within an article tag, and do the following:
-    $("article").each(function (i, element) {
+    $(".bump-view").each(function (i, element) {
       // Save an empty result object
       var result = {};
 
       // Add the text and href of every link, and save them as properties of the result object
-      result.title = $(this)
-                .children("header")
-                .children("h1")
-                .text();
-            result.link = $(this)
-                .children("header")
-                .children("h1")
-                .children("a")
-                .attr("href");
-            result.summary = $(this)
+      result.title = $(this).text().trim();
+            result.link = $(this).attr("href").trim();
+            /*result.summary = $(this)
                 .children("div")
                 .next().next()
                 .children("div")
                 .children("p")
-                .text();
+                .text();*/
                 
-                console.log(result.summary)
+                console.log(result)
       // Create a new Article using the `result` object built from scraping
+      if(result.title && result.link) {
       db.Article
         .create(result)
         .then(function (dbArticle) {
@@ -83,6 +77,7 @@ app.get("/scrape", function (req, res) {
           // If an error occurred, log it
           console.log(err);
         });
+      }
     });
 
     // Send a message to the client
